@@ -1,0 +1,47 @@
+@startuml
+!include <C4/C4_Container>
+
+skinparam backgroundColor #FFFFFF
+LAYOUT_LEFT_RIGHT()
+title C4 Container: Маркетплейс
+
+Person(buyer, "Покупатель", "Просматривает товары и оформляет заказы")
+Person(seller, "Продавец", "Размещает товары")
+
+System_Boundary(marketplace, "Маркетплейс") {
+    Container(users, "Сервис пользователей", "HTTP REST", "Покупатели, продавцы и их роли")
+    Container(catalog, "Сервис каталога", "Python 3.12, HTTP REST", "Товары продавцов")
+    Container(feed, "Сервис ленты", "HTTP REST", "Подбор товаров по категориям")
+    Container(orders, "Сервис заказов", "HTTP REST", "Заказы и их статусы")
+    Container(payments, "Сервис платежей", "HTTP REST", "Расчёт и учёт платежей")
+    Container(notifications, "Сервис уведомлений", "HTTP REST, WebSocket", "Уведомления о статусах")
+
+    ContainerDb(users_db, "БД пользователей", "PostgreSQL", "Профили и роли")
+    ContainerDb(catalog_db, "БД каталога", "PostgreSQL", "Товары и цены")
+    ContainerDb(feed_db, "БД ленты", "PostgreSQL", "Предпочитаемые категории")
+    ContainerDb(orders_db, "БД заказов", "PostgreSQL", "Заказы и статусы")
+    ContainerDb(payments_db, "БД платежей", "PostgreSQL", "Расчёты и платежи")
+    ContainerDb(notifications_db, "БД уведомлений", "PostgreSQL", "Отправленные уведомления")
+}
+
+Rel(buyer, users, "Управляет профилем", "Синхронно, HTTP REST")
+Rel(seller, users, "Управляет профилем", "Синхронно, HTTP REST")
+Rel(seller, catalog, "Управляет товарами", "Синхронно, HTTP REST")
+Rel(buyer, feed, "Просматривает ленту", "Синхронно, HTTP REST")
+Rel(buyer, orders, "Оформляет заказ", "Синхронно, HTTP REST")
+
+Rel(feed, catalog, "Получает товары", "Синхронно, HTTP REST")
+Rel(orders, catalog, "Получает сведения и цены товаров", "Синхронно, HTTP REST")
+Rel(orders, payments, "Передаёт состав заказа для расчёта и учёта платежа", "Синхронно, HTTP REST")
+Rel(orders, notifications, "Передаёт статус заказа", "Синхронно, HTTP REST")
+Rel(notifications, buyer, "Отправляет уведомления о статусах", "WebSocket")
+
+Rel(users, users_db, "Читает и записывает", "SQL")
+Rel(catalog, catalog_db, "Читает и записывает", "SQL")
+Rel(feed, feed_db, "Читает и записывает", "SQL")
+Rel(orders, orders_db, "Читает и записывает", "SQL")
+Rel(payments, payments_db, "Читает и записывает", "SQL")
+Rel(notifications, notifications_db, "Читает и записывает", "SQL")
+
+SHOW_LEGEND()
+@enduml
