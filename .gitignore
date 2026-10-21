@@ -1,3 +1,5 @@
 .DS_Store
 __pycache__/
 *.pyc
+homework-2/generated/
+homework-2/.venv/

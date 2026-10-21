@@ -1,0 +1,8 @@
+name: soa-homework-2-codegen
+services:
+  generate:
+    build: .
+    working_dir: /work
+    volumes:
+      - ..:/work
+    command: [generate, -g, python-fastapi, -i, /work/openapi/marketplace.yaml, -o, /work/generated, -t, /work/codegen/templates, --global-property, 'apis,models,supportingFiles']

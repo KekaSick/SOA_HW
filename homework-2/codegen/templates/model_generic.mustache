@@ -1,0 +1,58 @@
+from __future__ import annotations
+
+from decimal import Decimal
+from datetime import datetime
+import re
+from pydantic import BaseModel, Field, field_validator
+{{#vendorExtensions.x-py-datetime-imports}}{{#-first}}from datetime import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-datetime-imports}}
+{{#vendorExtensions.x-py-typing-imports}}{{#-first}}from typing import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-typing-imports}}
+{{#vendorExtensions.x-py-pydantic-imports}}{{#-first}}from pydantic import{{/-first}} {{{.}}}{{^-last}},{{/-last}}{{/vendorExtensions.x-py-pydantic-imports}}
+{{#vendorExtensions.x-py-other-imports}}
+{{{.}}}
+{{/vendorExtensions.x-py-other-imports}}
+{{#vendorExtensions.x-py-model-imports}}
+{{{.}}}
+{{/vendorExtensions.x-py-model-imports}}
+
+class {{classname}}(BaseModel):
+{{#vars}}
+{{#isNumber}}
+    {{name}}: Decimal = Field({{#minimum}}ge={{.}}, {{/minimum}}{{#maximum}}le={{.}}, {{/maximum}})
+{{/isNumber}}
+{{^isNumber}}
+    {{name}}: {{{vendorExtensions.x-py-typing}}}
+{{/isNumber}}
+{{/vars}}
+
+    model_config = {"populate_by_name": True, "extra": "forbid"}
+
+    @field_validator("*", mode="before")
+    @classmethod
+    def numeric_types(cls, value, info):
+        if cls.model_fields[info.field_name].annotation is Decimal:
+            if isinstance(value, bool) or not isinstance(value, (int, float, Decimal)):
+                raise ValueError("Ожидается число")
+        if cls.model_fields[info.field_name].annotation is datetime and not isinstance(value, (str, datetime)):
+            raise ValueError("Ожидается строка datetime")
+        return value
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def datetime_offset(cls, value):
+        if isinstance(value, datetime) and value.utcoffset() is None:
+            raise ValueError("datetime должен содержать часовой пояс")
+        return value
+{{#vars}}
+{{#vendorExtensions.x-regex}}
+
+    @field_validator("{{{name}}}")
+    @classmethod
+    def validate_{{{name}}}(cls, value):
+        if value is not None and not re.fullmatch(r"{{{.}}}", value):
+            raise ValueError("Неверный формат")
+        return value
+{{/vendorExtensions.x-regex}}
+{{/vars}}
+{{#vendorExtensions.x-py-postponed-model-imports}}
+{{{.}}}
+{{/vendorExtensions.x-py-postponed-model-imports}}
