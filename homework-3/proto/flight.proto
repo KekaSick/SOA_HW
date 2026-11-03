@@ -1,0 +1,87 @@
+syntax = "proto3";
+
+package flight;
+
+import "google/protobuf/timestamp.proto";
+
+service FlightService {
+  // Все методы требуют x-api-key (иначе UNAUTHENTICATED).
+  // Некорректные параметры: INVALID_ARGUMENT.
+  rpc SearchFlights(SearchFlightsRequest) returns (SearchFlightsResponse);
+  // Неизвестный рейс: NOT_FOUND.
+  rpc GetFlight(GetFlightRequest) returns (Flight);
+  // NOT_FOUND для рейса, RESOURCE_EXHAUSTED при нехватке мест,
+  // FAILED_PRECONDITION для рейса вне расписания,
+  // ALREADY_EXISTS при повторе booking_id с другими параметрами.
+  rpc ReserveSeats(ReserveSeatsRequest) returns (SeatReservation);
+  // Неизвестная резервация: NOT_FOUND. Уже снятая возвращается без изменений.
+  rpc ReleaseReservation(ReleaseReservationRequest) returns (SeatReservation);
+  // Изменяет цену и статус. Неизвестный рейс: NOT_FOUND.
+  rpc UpdateFlight(UpdateFlightRequest) returns (Flight);
+}
+
+enum FlightStatus {
+  FLIGHT_STATUS_UNSPECIFIED = 0;
+  SCHEDULED = 1;
+  DEPARTED = 2;
+  CANCELLED = 3;
+  COMPLETED = 4;
+}
+
+enum ReservationStatus {
+  RESERVATION_STATUS_UNSPECIFIED = 0;
+  ACTIVE = 1;
+  RELEASED = 2;
+  EXPIRED = 3;
+}
+
+message Flight {
+  int64 id = 1;
+  string flight_number = 2;
+  string airline = 3;
+  string origin = 4;
+  string destination = 5;
+  google.protobuf.Timestamp departure_at = 6;
+  google.protobuf.Timestamp arrival_at = 7;
+  int32 total_seats = 8;
+  int32 available_seats = 9;
+  int64 price = 10; // В копейках.
+  FlightStatus status = 11;
+}
+
+message SearchFlightsRequest {
+  string origin = 1;
+  string destination = 2;
+  google.protobuf.Timestamp date = 3; // День вылета в UTC, поле опционально.
+}
+
+message SearchFlightsResponse {
+  repeated Flight flights = 1;
+}
+
+message GetFlightRequest {
+  int64 flight_id = 1;
+}
+
+message ReserveSeatsRequest {
+  int64 flight_id = 1;
+  int32 seat_count = 2;
+  string booking_id = 3;
+}
+
+message ReleaseReservationRequest {
+  string booking_id = 1;
+}
+
+message SeatReservation {
+  string booking_id = 1;
+  int64 flight_id = 2;
+  int32 seat_count = 3;
+  ReservationStatus status = 4;
+}
+
+message UpdateFlightRequest {
+  int64 flight_id = 1;
+  int64 price = 2;
+  FlightStatus status = 3;
+}
